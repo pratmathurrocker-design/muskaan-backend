@@ -1,13 +1,14 @@
 import express from "express";
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const app = express();
 app.use(express.json());
 
-app.post("/chat", async (req, res) => {
-  const userMsg = req.body.message;
+// IMPORTANT: use global fetch (no node-fetch needed)
 
+app.post("/chat", async (req, res) => {
   try {
+    const userMsg = req.body.message;
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -27,16 +28,22 @@ app.post("/chat", async (req, res) => {
     });
 
     const data = await response.json();
-    res.json({ reply: data.choices[0].message.content });
+
+    res.json({
+      reply: data.choices?.[0]?.message?.content || "No response"
+    });
 
   } catch (err) {
+    console.log(err);
     res.json({ reply: "Server error" });
   }
 });
 
+// health check
 app.get("/", (req, res) => {
-  res.send("Muskaan Prahari running");
+  res.send("Muskaan Prahari backend running");
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("Server running"));
+// ✅ CRITICAL FIX: dynamic port
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Server running on " + PORT));
